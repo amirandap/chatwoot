@@ -2,7 +2,7 @@
 
 Source: [PR #15962](https://github.com/chatwoot/chatwoot/pull/15962), frozen at `562de2bccef4ff9b13179a35e08cb09971971c4c`. Ticket: [CW-8270](https://linear.app/chatwoot/issue/CW-8270/add-conversation-monitors-to-reports-with-jev).
 
-The stack starts from develop at `8aa1fafe2034d69af8e1b2c9ace74b9dfb1d878d`. Each draft targets the preceding numbered branch; only PR 1 targets develop. This is a review reorganization, with the same final product behavior and five-table schema. Existing migration identities are preserved. The original PR remains open as a reference and receives the replacement map.
+Each PR targets the preceding numbered branch; only PR 1 targets develop. The original PR remains a frozen reference. Since the feature has not shipped, the foundation now creates its final five-table schema in one reversible migration, including `conversation_monitors.user_id`. The remaining nine PRs add behavior without follow-up schema migrations.
 
 ## Final boundaries
 
@@ -26,13 +26,13 @@ Branches use `codex/cw-8270-<suffix>` from the table. Tests travel with the beha
 1. After 3: schema, feature flag, context and credit contracts are independently testable; collection remains off.
 2. After 5: source changes can safely drive the durable evaluation engine and recover missed enqueueing.
 3. After 7: all backend product flows are available through authorized APIs, before dashboard discovery.
-4. After 10: full feature equivalence, preserved migrations, focused regression suites, frontend build and clean commits are verified before draft publication.
+4. After 10: complete product flows, the consolidated schema, focused regression suites, frontend build and clean commits are verified before draft publication.
 
 ## Compatibility and rollout
 
-Keep all eight migrations and the legacy Jev model-ID mapping. Shared/preview deployment has not been ruled out, so do not rewrite applied migration history. For upgrades from the earlier prototype, use the data-preserving scan migration and documented worker/legacy-queue transition. The feature remains disabled by default and should only be enabled after the full stack has merged.
+All monitor tables, indexes, foreign keys, and constraints belong to the single migration in #15966. It creates the final scan table directly, replacing the prototype migration chain. The optional `user_id` association identifies who created the monitor and is nullified when the user is deleted.
 
-The current develop changes are retained. Final equivalence is checked against the clean merge of the frozen feature head onto the recorded develop commit; the stack plan and delivery links are the only intended additional documentation.
+The feature remains disabled by default and should only be enabled after the full stack has merged. Existing local prototype databases can be reconciled separately without adding production compatibility migrations. Preserve current develop changes and propagate each parent update through its descendants.
 
 ## Review and merge procedure
 
@@ -40,33 +40,39 @@ Every draft includes the whole stack map, parent/successor, original reference, 
 
 After a parent lands in develop, replay only the child's own changes on updated develop and retarget it; with squash merges, avoid reintroducing the parent's changes. Refresh descendants in order and rerun affected validation. Do not delete predecessor branches while descendants still target them. Recheck shared provider config and feature-bit allocation against develop before merging.
 
-All PRs are drafts. Creation does not authorize merge, rollout, or closing the original reference PR. No product decisions remain open for this extraction.
+The PRs were initially created as drafts. Creating or updating the stack does not authorize merge, rollout, or closing the original reference PR. No product decisions remain open for this extraction.
 
 
-## Published draft stack
+## Published stack
 
-| Order | Draft PR | Incremental diff |
+| Order | PR | Review scope |
 | --- | --- | --- |
-| 1 | [#15966: define monitor data contracts](https://github.com/chatwoot/chatwoot/pull/15966) | 22 files changed, 525 insertions(+), 2 deletions(-) |
-| 2 | [#15967: enforce monitor call credits](https://github.com/chatwoot/chatwoot/pull/15967) | 6 files changed, 294 insertions(+) |
-| 3 | [#15968: evaluate monitor conditions through OpenRouter](https://github.com/chatwoot/chatwoot/pull/15968) | 13 files changed, 536 insertions(+), 1 deletion(-) |
-| 4 | [#15969: process durable monitor evaluations](https://github.com/chatwoot/chatwoot/pull/15969) | 10 files changed, 653 insertions(+) |
-| 5 | [#15970: track monitor source activity](https://github.com/chatwoot/chatwoot/pull/15970) | 10 files changed, 275 insertions(+), 3 deletions(-) |
-| 6 | [#15971: support monitor lifecycle transitions](https://github.com/chatwoot/chatwoot/pull/15971) | 9 files changed, 686 insertions(+) |
-| 7 | [#15972: expose conversation monitor APIs](https://github.com/chatwoot/chatwoot/pull/15972) | 6 files changed, 549 insertions(+) |
-| 8 | [#15973: display live monitor reports](https://github.com/chatwoot/chatwoot/pull/15973) | 13 files changed, 1203 insertions(+) |
-| 9 | [#15974: create and preview conversation monitors](https://github.com/chatwoot/chatwoot/pull/15974) | 7 files changed, 597 insertions(+) |
-| 10 | [#15975: manage conversation monitors](https://github.com/chatwoot/chatwoot/pull/15975) | 5 files changed, 836 insertions(+), 8 deletions(-) |
+| 1 | [#15966](https://github.com/chatwoot/chatwoot/pull/15966) | Single migration, models and default-off flag |
+| 2 | [#15967](https://github.com/chatwoot/chatwoot/pull/15967) | Monthly credits and update broadcasts |
+| 3 | [#15968](https://github.com/chatwoot/chatwoot/pull/15968) | OpenRouter client and context |
+| 4 | [#15969](https://github.com/chatwoot/chatwoot/pull/15969) | Durable evaluation and scans |
+| 5 | [#15970](https://github.com/chatwoot/chatwoot/pull/15970) | Source activity and recovery wiring |
+| 6 | [#15971](https://github.com/chatwoot/chatwoot/pull/15971) | Pause/resume, updates and coverage |
+| 7 | [#15972](https://github.com/chatwoot/chatwoot/pull/15972) | Account APIs and previews |
+| 8 | [#15973](https://github.com/chatwoot/chatwoot/pull/15973) | Charts, filters, drilldowns and realtime |
+| 9 | [#15974](https://github.com/chatwoot/chatwoot/pull/15974) | Monitor listing, creation and previews |
+| 10 | [#15975](https://github.com/chatwoot/chatwoot/pull/15975) | Management UI and implementation documents |
 
-The report-view PR contains two review commits: supporting components/realtime (442 added lines) and the graph/detail page (761 added lines). The management PR separates its product code from the 501-line original design/rollout documents. These are the two larger PRs; the other incremental diffs are 275–686 lines before this final delivery note.
+Review each PR against its current parent. Only #15966 contains migration and schema changes; the API assignment to the renamed user association is in #15972.
 
-## Final validation
+## Initial stack validation
 
 - 530 backend examples and 38 frontend tests passed on the complete stack.
 - Ruby lint passed across 60 files. Frontend lint passed across 17 files with zero errors and eight known translation/root-condition warnings.
 - The production frontend build passed, with existing bundle-size/dependency warnings.
 - Fresh-database migrations, final schema uniqueness/default-off checks, and both Community/Enterprise Zeitwerk checks passed.
 - Each intermediate branch passed its focused checks before committing, with repository hooks enabled.
-- The complete feature tree is identical to the clean merge of reference commit `562de2bccef4ff9b13179a35e08cb09971971c4c` onto recorded develop `8aa1fafe2034d69af8e1b2c9ace74b9dfb1d878d`, apart from this stack-plan document. No feature behavior or applied migration IDs were changed by extraction.
+- The initial extraction preserved the frozen reference behavior. Subsequent review fixes and the migration consolidation intentionally update that reference.
 
 GitHub CI runs separately; local validation does not imply all remote checks have completed. Keep the original PR open as a reference while reviewing these drafts.
+
+## Migration consolidation validation
+
+The single migration was applied to an isolated database built from the base schema, rolled back, and applied again. Its five final tables, columns, indexes, foreign keys, and checks match the previous final schema, apart from the requested `creator_id` to `user_id` rename. User deletion still nullifies the association, and the create API saves the signed-in user. Initial/resume scans and usage persistence were checked against the new schema.
+
+The foundation account/API suite passed 96 examples, and the monitor backend suite passed 112 examples. Focused Ruby lint and whitespace checks passed. The existing local demo data was not used for these tests.
