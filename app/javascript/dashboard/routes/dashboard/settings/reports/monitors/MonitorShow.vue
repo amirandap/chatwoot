@@ -38,13 +38,10 @@ const timezone = computed(
 );
 const MIN_RANGE_DAYS = 7;
 const MAX_RANGE_DAYS = 30;
+const offsetDate = (date, days) =>
+  date ? format(addDays(new Date(`${date}T12:00:00`), days), 'yyyy-MM-dd') : '';
 const today = formatInTimeZone(new Date(), timezone.value, 'yyyy-MM-dd');
-const startDate = ref(
-  format(
-    addDays(new Date(`${today}T12:00:00`), 1 - MIN_RANGE_DAYS),
-    'yyyy-MM-dd'
-  )
-);
+const startDate = ref(offsetDate(today, 1 - MIN_RANGE_DAYS));
 const endDate = ref(today);
 const request = ref(null);
 const displayedRequest = ref(null);
@@ -163,18 +160,6 @@ const fetchReport = async () => {
       since: until - Number(activeRangeDays.value) * 86400,
     };
   }
-  if (collectionEndsAt.value) {
-    request.value = {
-      ...request.value,
-      until: Math.min(request.value.until, collectionEndsAt.value),
-    };
-    if (request.value.since >= request.value.until) {
-      error.value = errorText('invalid_parameters');
-      result.value = null;
-      drilldown.value = null;
-      return;
-    }
-  }
   const requestedFilters = { ...request.value };
   const requestedRangeDays = activeRangeDays.value;
   const requestedAccount = accountId.value;
@@ -201,9 +186,8 @@ const fetchReport = async () => {
     }
     if (
       collectionEndsAt.value &&
-      (activeRangeDays.value === 'custom'
-        ? requestedFilters.until > collectionEndsAt.value
-        : requestedFilters.until !== collectionEndsAt.value)
+      activeRangeDays.value !== 'custom' &&
+      requestedFilters.until !== collectionEndsAt.value
     ) {
       await fetchReport();
       return;
@@ -301,7 +285,9 @@ watch(
 watch(isAdmin, () => {
   drilldown.value = null;
 });
-useMonitorRefresh(fetchReport);
+useMonitorRefresh(fetchReport, {
+  shouldPoll: () => activeRangeDays.value !== 'custom',
+});
 
 const openBucket = ({ pointIndex }) => {
   if (!isAdmin.value) return;
@@ -478,11 +464,15 @@ const duplicate = () =>
                   v-model="startDate"
                   type="date"
                   :label="t('MONITORS.FROM')"
+                  :min="offsetDate(endDate, 1 - MAX_RANGE_DAYS)"
+                  :max="offsetDate(endDate, 1 - MIN_RANGE_DAYS)"
                 />
                 <Input
                   v-model="endDate"
                   type="date"
                   :label="t('MONITORS.TO')"
+                  :min="offsetDate(startDate, MIN_RANGE_DAYS - 1)"
+                  :max="offsetDate(startDate, MAX_RANGE_DAYS - 1)"
                 />
                 <p v-if="!filterError" class="m-0 text-xs text-n-slate-11">
                   {{ t('MONITORS.CUSTOM_RANGE_HELP') }}

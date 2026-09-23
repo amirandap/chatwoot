@@ -3,7 +3,12 @@ import { computed, reactive, ref } from 'vue';
 import MonitorShow from '../MonitorShow.vue';
 import MonitorsAPI from 'dashboard/api/monitors';
 
-const state = vi.hoisted(() => ({ route: null, refresh: null, account: null }));
+const state = vi.hoisted(() => ({
+  route: null,
+  refresh: null,
+  account: null,
+  shouldPoll: null,
+}));
 vi.mock('vue-router', async importOriginal => ({
   ...(await importOriginal()),
   useRoute: () => state.route,
@@ -31,8 +36,9 @@ vi.mock('dashboard/components-next/dialog/Dialog.vue', () => ({
   },
 }));
 vi.mock('../useMonitorRefresh', () => ({
-  useMonitorRefresh: refresh => {
+  useMonitorRefresh: (refresh, { shouldPoll }) => {
     state.refresh = refresh;
+    state.shouldPoll = shouldPoll;
   },
 }));
 vi.mock('dashboard/api/monitors', () => ({
@@ -90,6 +96,67 @@ describe('MonitorShow', () => {
     wrapper?.unmount();
     vi.useRealTimers();
   });
+
+  it('uses only the applied range to control polling and constrains date inputs to 7–30 days', async () => {
+    wrapper = shallowMount(MonitorShow, mountOptions);
+    await flushPromises();
+    expect(state.shouldPoll()).toBe(true);
+    await wrapper.find('select').setValue('custom');
+    expect(state.shouldPoll()).toBe(true);
+    const inputs = wrapper.findAllComponents({ name: 'Input' });
+    expect(inputs[0].attributes()).toMatchObject({
+      min: '2026-08-24',
+      max: '2026-09-16',
+    });
+    expect(inputs[1].attributes()).toMatchObject({
+      min: '2026-09-22',
+      max: '2026-10-15',
+    });
+
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(state.shouldPoll()).toBe(false);
+    await wrapper.find('select').setValue('30');
+    expect(state.shouldPoll()).toBe(false);
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(state.shouldPoll()).toBe(true);
+  });
+
+  it.each(['2026-09-20T12:00:00Z', '2026-08-22T12:00:00Z'])(
+    'preserves custom dates across a pause at %s and subsequent resume',
+    async pauseTime => {
+      let paused = true;
+      MonitorsAPI.timeseries.mockImplementation(async (id, params) => {
+        const response = responseFor(params);
+        response.data.monitor.paused_at = paused
+          ? Date.parse(pauseTime) / 1000
+          : null;
+        return response;
+      });
+      wrapper = shallowMount(MonitorShow, mountOptions);
+      await flushPromises();
+      await wrapper.find('select').setValue('custom');
+      const inputs = wrapper.findAllComponents({ name: 'Input' });
+      inputs[0].vm.$emit('update:modelValue', '2026-09-16');
+      inputs[1].vm.$emit('update:modelValue', '2026-09-22');
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+      const selected = { ...MonitorsAPI.timeseries.mock.lastCall[1] };
+      expect(selected).toMatchObject({
+        since: Date.parse('2026-09-16T00:00:00Z') / 1000,
+        until: Date.parse('2026-09-23T00:00:00Z') / 1000,
+      });
+      expect(wrapper.findComponent({ name: 'BarChart' }).exists()).toBe(true);
+
+      const calls = MonitorsAPI.timeseries.mock.calls.length;
+      paused = false;
+      await state.refresh();
+      await flushPromises();
+      expect(MonitorsAPI.timeseries).toHaveBeenCalledTimes(calls + 1);
+      expect(MonitorsAPI.timeseries.mock.lastCall[1]).toEqual(selected);
+    }
+  );
 
   it('uses the account timezone for custom calendar dates across daylight saving', async () => {
     state.account.reporting_timezone = 'America/New_York';
