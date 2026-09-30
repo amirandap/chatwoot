@@ -1,0 +1,16 @@
+FROM chatwoot/chatwoot:v4.16.0
+
+COPY app/controllers/webhooks/gmail_pubsub_controller.rb /app/app/controllers/webhooks/gmail_pubsub_controller.rb
+COPY app/jobs/inboxes/process_gmail_history_job.rb /app/app/jobs/inboxes/process_gmail_history_job.rb
+COPY app/jobs/inboxes/renew_gmail_pubsub_watches_job.rb /app/app/jobs/inboxes/renew_gmail_pubsub_watches_job.rb
+COPY app/mailboxes/gmail/sent_mailbox.rb /app/app/mailboxes/gmail/sent_mailbox.rb
+COPY app/models/gmail_pubsub_sync_state.rb /app/app/models/gmail_pubsub_sync_state.rb
+COPY app/services/gmail /app/app/services/gmail
+COPY lib/tasks/gmail_pubsub.rake /app/lib/tasks/gmail_pubsub.rake
+COPY db/migrate/20260930000000_create_gmail_pubsub_sync_states.rb /app/db/migrate/20260930000000_create_gmail_pubsub_sync_states.rb
+
+# These are small upstream extensions. Keep the base image pinned to v4.16.0 until this fork is rebased.
+COPY app/models/channel/email.rb /app/app/models/channel/email.rb
+COPY app/jobs/inboxes/fetch_imap_email_inboxes_job.rb /app/app/jobs/inboxes/fetch_imap_email_inboxes_job.rb
+COPY config/routes.rb /app/config/routes.rb
+COPY config/schedule.yml /app/config/schedule.yml
