@@ -11,6 +11,7 @@ namespace :gmail_pubsub do
     state.save!
     Gmail::WatchService.new(state).perform
     state.update!(active: true)
+    Inboxes::ProcessGmailHistoryJob.perform_later(state.id)
     puts "Gmail Pub/Sub enabled for #{channel.email}"
   end
 end

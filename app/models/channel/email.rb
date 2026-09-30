@@ -78,7 +78,7 @@ class Channel::Email < ApplicationRecord
   end
 
   def gmail_pubsub_enabled?
-    gmail_pubsub_sync_state&.active?
+    gmail_pubsub_sync_state&.active? && gmail_pubsub_sync_state.watch_expires_at&.future?
   end
 
   private
