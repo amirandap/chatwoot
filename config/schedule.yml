@@ -26,6 +26,12 @@ trigger_imap_email_inboxes_job:
   class: 'Inboxes::FetchImapEmailInboxesJob'
   queue: scheduled_jobs
 
+# Google Gmail watches expire in at most seven days. Renewing daily leaves room for retries.
+renew_gmail_pubsub_watches_job:
+  cron: '15 0 * * *'
+  class: 'Inboxes::RenewGmailPubsubWatchesJob'
+  queue: scheduled_jobs
+
 # executed daily at 2230 UTC
 # which is our lowest traffic time
 remove_stale_contact_inboxes_job.rb:

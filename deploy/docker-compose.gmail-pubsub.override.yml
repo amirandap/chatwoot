@@ -1,0 +1,5 @@
+services:
+  rails:
+    image: chatwoot-softgroup:gmail-pubsub
+  sidekiq:
+    image: chatwoot-softgroup:gmail-pubsub
