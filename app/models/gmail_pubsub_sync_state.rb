@@ -5,4 +5,6 @@ class GmailPubsubSyncState < ApplicationRecord
   validates :email_address, presence: true, uniqueness: true
   validates :channel_id, uniqueness: true
   validates :sent_message_user, presence: true, if: :sync_sent_messages?
+
+  scope :active, -> { where(active: true) }
 end

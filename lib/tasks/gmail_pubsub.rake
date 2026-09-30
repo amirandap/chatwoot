@@ -10,6 +10,7 @@ namespace :gmail_pubsub do
     state.sent_message_user_id = args[:sent_user_id]
     state.save!
     Gmail::WatchService.new(state).perform
+    state.update!(active: true)
     puts "Gmail Pub/Sub enabled for #{channel.email}"
   end
 end

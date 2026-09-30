@@ -30,8 +30,9 @@ class Gmail::HistorySyncService
 
     @sync_state.update!(history_id: latest_history_id, last_synced_at: Time.current, last_error: nil)
   rescue Gmail::Client::HistoryExpired
-    Gmail::BackfillService.new(@sync_state).perform
-    @sync_state.update!(last_recovery_at: Time.current, last_error: nil)
+    recovery_history_id = Gmail::BackfillService.new(@sync_state).perform
+    @sync_state.update!(history_id: recovery_history_id, last_recovery_at: Time.current, last_error: nil)
+    perform
     Gmail::WatchService.new(@sync_state).perform
   rescue StandardError => e
     @sync_state.update_column(:last_error, "#{e.class}: #{e.message}")

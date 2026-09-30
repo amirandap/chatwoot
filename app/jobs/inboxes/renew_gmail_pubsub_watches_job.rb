@@ -2,7 +2,7 @@ class Inboxes::RenewGmailPubsubWatchesJob < ApplicationJob
   queue_as :scheduled_jobs
 
   def perform
-    GmailPubsubSyncState.includes(:channel).find_each do |sync_state|
+    GmailPubsubSyncState.active.includes(:channel).find_each do |sync_state|
       next if sync_state.channel.reauthorization_required?
 
       Gmail::WatchService.new(sync_state).perform

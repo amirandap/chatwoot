@@ -32,6 +32,6 @@ This explicit mapping prevents a Gmail-composed reply from being attributed to a
 
 ## Recovery and operations
 
-The daily watch-renewal job preserves the existing `historyId`; it never advances the cursor. Every Pub/Sub notification enqueues a per-inbox locked History API job. The job writes the new cursor only after every returned MIME message was imported successfully. A too-old history cursor causes a two-day, idempotent reconciliation and a new watch.
+The daily watch-renewal job preserves the existing `historyId`; it never advances the cursor. Every Pub/Sub notification enqueues a per-inbox locked History API job. The job writes the new cursor only after every returned MIME message was imported successfully. A too-old history cursor causes a two-day, idempotent reconciliation, then consumes History API from the cursor captured before that reconciliation, and finally renews the watch.
 
 The IMAP polling scheduler skips any email channel with a `GmailPubsubSyncState`, while `imap_enabled` remains true so native Gmail OAuth sending continues to work.

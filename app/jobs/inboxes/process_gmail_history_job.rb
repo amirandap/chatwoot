@@ -4,6 +4,7 @@ class Inboxes::ProcessGmailHistoryJob < MutexApplicationJob
 
   def perform(sync_state_id)
     sync_state = GmailPubsubSyncState.find(sync_state_id)
+    return unless sync_state.active?
     return if sync_state.channel.reauthorization_required?
 
     with_lock(lock_key(sync_state), 10.minutes) do

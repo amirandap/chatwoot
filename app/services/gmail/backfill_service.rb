@@ -7,6 +7,7 @@ class Gmail::BackfillService
   end
 
   def perform
+    history_id = @client.profile.fetch('historyId')
     page_token = nil
     query = "after:#{(Time.current - OVERLAP).to_date.strftime('%Y/%m/%d')}"
 
@@ -20,6 +21,6 @@ class Gmail::BackfillService
       break if page_token.blank?
     end
 
-    @sync_state.update!(history_id: @client.profile.fetch('historyId'))
+    history_id
   end
 end

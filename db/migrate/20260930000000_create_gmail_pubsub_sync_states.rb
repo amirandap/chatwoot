@@ -10,6 +10,7 @@ class CreateGmailPubsubSyncStates < ActiveRecord::Migration[7.1]
       t.text :last_error
       t.bigint :sent_message_user_id
       t.boolean :sync_sent_messages, null: false, default: false
+      t.boolean :active, null: false, default: false
       t.timestamps
     end
 
