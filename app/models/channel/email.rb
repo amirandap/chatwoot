@@ -73,6 +73,14 @@ class Channel::Email < ApplicationRecord
     imap_enabled && imap_address == 'imap.gmail.com'
   end
 
+  def gmail_pubsub_sync_state
+    GmailPubsubSyncState.find_by(channel_id: id)
+  end
+
+  def gmail_pubsub_enabled?
+    gmail_pubsub_sync_state.present?
+  end
+
   private
 
   def ensure_forward_to_email
